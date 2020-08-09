@@ -68,11 +68,26 @@ def inplace_softmax(X):
     X /= X.sum(axis=1)[:, np.newaxis]
 
 
+def inplace_leaky_relu(X):
+    np.maximum(X, 0.1*X, out=X)
+
+
+def inplace_gaussian(X):
+    np.exp(-(X**2)/2, out=X)
+
+
+def inplace_elu(X):
+    np.maximum(X, 0.1*(np.exp(X) - 1), out=X)
+
+
 ACTIVATIONS = {'identity': inplace_identity,
                'tanh': inplace_tanh,
                'logistic': inplace_logistic,
                'relu': inplace_relu,
-               'softmax': inplace_softmax}
+               'softmax': inplace_softmax,
+               'elu': inplace_elu,
+               'leaky_relu': inplace_leaky_relu,
+               'gaussian': inplace_gaussian}
 
 
 def inplace_identity_derivative(Z, delta):
@@ -145,10 +160,29 @@ def inplace_relu_derivative(Z, delta):
     delta[Z == 0] = 0
 
 
+def inplace_leaky_relu_derivative(Z, delta):
+    delta[Z <= 0] = 0.1
+
+
+def inplace_elu_derivative(Z, delta):
+    indexs = Z <= 0
+    indexs, _ = np.where(indexs == True)
+    for index in indexs:
+        delta[index] = 0.1*np.exp(Z[index])
+
+
+def inplace_gaussian_derivative(Z, delta):
+    delta *= -Z
+    delta *= (1 - Z)
+
+
 DERIVATIVES = {'identity': inplace_identity_derivative,
                'tanh': inplace_tanh_derivative,
                'logistic': inplace_logistic_derivative,
-               'relu': inplace_relu_derivative}
+               'relu': inplace_relu_derivative,
+               'elu': inplace_elu_derivative,
+               'leaky_relu': inplace_leaky_relu_derivative,
+               'gaussian': inplace_gaussian_derivative}
 
 
 def squared_loss(y_true, y_pred):
